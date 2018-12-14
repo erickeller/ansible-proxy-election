@@ -1,0 +1,16 @@
+---
+- hosts: all
+  gather_facts: true
+  vars:
+    - proxy_list: [google.com, yahoo.com, bing.com]
+  tasks:
+    - name: elect least latency proxy
+      shell: "ping -c3 {{ item }} | tail -n1 | awk '{print $4}'| cut -d '/' -f2"
+      with_items: "{{ proxy_list }}"
+      register: pingout
+
+    - debug: msg="item.item={{item.item}}, item.stdout={{item.stdout}}"
+      with_items: "{{ pingout.results }}"
+
+    - debug:
+        msg: "{{ pingout.results | sort(attribute='stdout') | first }}"
