@@ -2,12 +2,15 @@
 - hosts: all
   gather_facts: true
   vars:
-    - proxy_list: [google.com, localhost, yahoo.com, bing.com]
+    - proxy_list: [digitec.ch, yahoo.com, localhost, google.com, bing.com, telefonica.es]
   tasks:
     - name: elect least latency proxy
-      shell: "ping -c3 {{ item }} | tail -n1 | awk '{print $4}'| cut -d '/' -f2"
+      shell: "ping -c3 {{ item }} | tail -n1 | awk '{print $4}'| cut -d '/' -f2 | cut -d. -f1"
       with_items: "{{ proxy_list }}"
       register: pingout
+
+    - debug:
+        msg: "results type: {{ pingout.results | type_debug }}"
     
     - debug:
         msg: "{{ pingout.results }}"
@@ -15,11 +18,22 @@
     - debug: msg="item.item={{item.item}}, item.stdout={{item.stdout}} type={{item.stdout|float|type_debug}}"
       with_items: "{{ pingout.results }}"
 
-    - name: Populate proxy list
+    - debug: msg="{{ pingout.results | map(attribute='stdout') | min }}"
+
+    - name: get smallest latency
       set_fact:
-        lproxies: "{{ lproxies | default([])}} + {{ [ {'name': item.item, 'latency': item.stdout|float} ] }}"
+        latency: "{{ pingout.results | map(attribute='stdout') | min }}"
+
+    - debug: msg="{{latency}} {{item.stdout}} proxy={{item.item}}"
       with_items: "{{ pingout.results }}"
+      when: latency == item.stdout
     
+    - name: get corresponding proxy
+      set_fact:
+        elected_proxy: "{{ item.item }}"
+      with_items: "{{ pingout.results }}"
+      when: latency == item.stdout
+
     - debug:
-        msg: "elected_proxy: {{ (lproxies | sort(attribute='latency') | first).name }}"
+        msg: "elected_proxy: {{ elected_proxy }}"
 
