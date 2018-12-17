@@ -4,6 +4,11 @@
 
 One would like to use the service with the least latency from a specific server.
 
+## Ansible version
+
+Due to set_facts with_items bug: https://github.com/ansible/ansible/issues/38991
+the version 2.5.1 should be omitted.
+
 ## Usage
 
 ```
