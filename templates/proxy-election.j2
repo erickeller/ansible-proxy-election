@@ -1,0 +1,8 @@
+#!/bin/sh
+RES=""
+proxies="{{ proxy_list | join(' ') }}"
+for p in $proxies
+do
+  ping -c1 $p > /dev/null 2>&1 && RES="$RES $(ping -c3 $p | tail -n1 | awk '{print $4}'| cut -d '/' -f2 | cut -d. -f1),$p\n"
+done
+echo $RES | sort -t',' -nk1 | head -n2 | tail -n1 | cut -d, -f2

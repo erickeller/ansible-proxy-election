@@ -4,36 +4,16 @@
   vars:
     - proxy_list: [digitec.ch, yahoo.com, localhost, google.com, bing.com, telefonica.es]
   tasks:
-    - name: elect least latency proxy
-      shell: "ping -c3 {{ item }} | tail -n1 | awk '{print $4}'| cut -d '/' -f2 | cut -d. -f1"
-      with_items: "{{ proxy_list }}"
-      register: pingout
+    - name: template proxy-election script
+      template:
+        src: proxy-election.j2
+        dest: /tmp/proxy-election
+        mode: 0755
+
+    - name: execute script
+      shell: /tmp/proxy-election
+      register: result
 
     - debug:
-        msg: "results type: {{ pingout.results | type_debug }}"
-    
-    - debug:
-        msg: "{{ pingout.results }}"
-
-    - debug: msg="item.item={{item.item}}, item.stdout={{item.stdout}} type={{item.stdout|float|type_debug}}"
-      with_items: "{{ pingout.results }}"
-
-    - debug: msg="{{ pingout.results | map(attribute='stdout') | min }}"
-
-    - name: get smallest latency
-      set_fact:
-        latency: "{{ pingout.results | map(attribute='stdout') | min }}"
-
-    - debug: msg="{{latency}} {{item.stdout}} proxy={{item.item}}"
-      with_items: "{{ pingout.results }}"
-      when: latency == item.stdout
-    
-    - name: get corresponding proxy
-      set_fact:
-        elected_proxy: "{{ item.item }}"
-      with_items: "{{ pingout.results }}"
-      when: latency == item.stdout
-
-    - debug:
-        msg: "elected_proxy: {{ elected_proxy }}"
+        msg: "elected_proxy: {{ result.stdout }}"
 
